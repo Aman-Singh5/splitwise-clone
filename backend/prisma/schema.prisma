@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  passwordHash  String?
+  googleId      String?  @unique
+  avatar        String?
+  defaultCurrency String @default("USD")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sentFriendRequests     Friendship[] @relation("SentRequests")
+  receivedFriendRequests Friendship[] @relation("ReceivedRequests")
+
+  groupMemberships GroupMember[]
+  createdGroups    Group[]       @relation("GroupCreator")
+
+  paidExpenses     Expense[]      @relation("ExpensePayer")
+  expenseSplits    ExpenseSplit[]
+
+  sentSettlements     Settlement[] @relation("SettlementFrom")
+  receivedSettlements Settlement[] @relation("SettlementTo")
+
+  activities    Activity[]
+  notifications Notification[]
+
+  passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
+}
+
+model Friendship {
+  id        String           @id @default(uuid())
+  userId    String
+  friendId  String
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  user   User @relation("SentRequests", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("ReceivedRequests", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Group {
+  id            String   @id @default(uuid())
+  name          String
+  image         String?
+  type          GroupType @default(OTHER)
+  simplifyDebts Boolean  @default(false)
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdBy User          @relation("GroupCreator", fields: [createdById], references: [id])
+  members   GroupMember[]
+  expenses  Expense[]
+  settlements Settlement[]
+  activities Activity[]
+}
+
+enum GroupType {
+  TRIP
+  HOME
+  COUPLE
+  OTHER
+}
+
+model GroupMember {
+  id       String          @id @default(uuid())
+  groupId  String
+  userId   String
+  role     GroupMemberRole @default(MEMBER)
+  joinedAt DateTime        @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MEMBER
+}
+
+model Expense {
+  id                String    @id @default(uuid())
+  description       String
+  amount            Float
+  currency          String    @default("USD")
+  amountInUsd       Float
+  exchangeRate      Float     @default(1)
+  paidById          String
+  groupId           String?
+  category          String    @default("General")
+  date              DateTime  @default(now())
+  receiptUrl        String?
+  isRecurring       Boolean   @default(false)
+  recurringInterval String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  paidBy User         @relation("ExpensePayer", fields: [paidById], references: [id])
+  group  Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  splits ExpenseSplit[]
+}
+
+model ExpenseSplit {
+  id         String    @id @default(uuid())
+  expenseId  String
+  userId     String
+  amount     Float
+  splitType  SplitType @default(EQUAL)
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+}
+
+enum SplitType {
+  EQUAL
+  EXACT
+  PERCENT
+  SHARES
+}
+
+model Settlement {
+  id        String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  amount     Float
+  currency   String  @default("USD")
+  groupId    String?
+  notes      String?
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  fromUser User   @relation("SettlementFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User   @relation("SettlementTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  group    Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+model Activity {
+  id        String       @id @default(uuid())
+  userId    String
+  groupId   String?
+  type      ActivityType
+  metadata  Json
+  createdAt DateTime     @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+enum ActivityType {
+  EXPENSE_ADDED
+  EXPENSE_UPDATED
+  EXPENSE_DELETED
+  SETTLEMENT_CREATED
+  FRIEND_REQUEST_SENT
+  FRIEND_REQUEST_ACCEPTED
+  GROUP_CREATED
+  GROUP_MEMBER_ADDED
+  GROUP_MEMBER_REMOVED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  read      Boolean          @default(false)
+  data      Json
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  EXPENSE_ADDED
+  SETTLEMENT_RECEIVED
+  FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
+  GROUP_INVITE
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
