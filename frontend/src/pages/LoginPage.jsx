@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import api from '../api/client'
+import { GOOGLE_AUTH_URL } from '../api/config'
 import { useAuth } from '../context/AuthContext'
 import { Wallet } from 'lucide-react'
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/google'
+    window.location.href = GOOGLE_AUTH_URL
   }
 
   return (

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import api from '../api/client'
+import { GOOGLE_AUTH_URL } from '../api/config'
 import { useAuth } from '../context/AuthContext'
 import { Wallet } from 'lucide-react'
 
@@ -48,7 +49,7 @@ export default function RegisterPage() {
 
         <div className="card shadow-md">
           <button
-            onClick={() => window.location.href = '/api/auth/google'}
+            onClick={() => window.location.href = GOOGLE_AUTH_URL}
             className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-5"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
