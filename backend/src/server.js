@@ -29,6 +29,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
+  'https://splitwise-clone-frontend.vercel.app',
 ].filter(Boolean);
 
 app.use(cors({

@@ -1,8 +1,17 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api';
+let BASE_URL;
+
+if (import.meta.env.VITE_API_URL) {
+  // Use explicit API URL if provided (e.g. in Vercel env vars)
+  BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+} else if (import.meta.env.MODE === 'production') {
+  // Production fallback to your Render backend URL
+  BASE_URL = 'https://splitwise-backend-5ljc.onrender.com/api';
+} else {
+  // Local development (Vite proxy to localhost:3001)
+  BASE_URL = '/api';
+}
 
 const api = axios.create({
   baseURL: BASE_URL,
